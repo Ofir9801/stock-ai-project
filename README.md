@@ -11,13 +11,13 @@
 
 ## 🚀 Live Demo
 
-👉 **[View Live App](https://your-app.onrender.com)** ← *(יעודכן אחרי deploy)*
+👉 **[View Live App](https://your-app.onrender.com)**
 
 ---
 
 ## 📸 Screenshots
 
-> *(תוסיף צילום מסך של האפליקציה כאן — לוחצים Print Screen בזמן שהאפליקציה פתוחה)*
+> 
 
 ---
 
@@ -161,7 +161,7 @@ Pull requests are welcome. For major changes, please open an issue first.
 
 ## 📄 License
 
-MIT © [Your Name](https://github.com/ofir9801)
+MIT © [Ofir Eren](https://github.com/ofir9801)
 
 ---
 
