@@ -1,21 +1,24 @@
 import streamlit as st
 import requests
-import pandas as pd
+import os
+
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
 # page settings
 st.set_page_config(page_title="AI Stock Research", layout="wide")
 
 st.title("📈 AI Stock Research Dashboard")
+st.subheader("Professional Sectoral & Competitive Analysis")
 st.markdown("---")
 
-# search bar
-ticker = st.text_input("Enter Stock Ticker (e.g., AAPL, TSLA, NVDA):", "AAPL").upper()
+# input for stock ticker
+ticker = st.text_input("Enter Stock Ticker (e.g. NVDA, AAPL, MSFT):", "NVDA").upper()
 
-if st.button("Run AI Analysis"):
-    with st.spinner(f"Analyzing {ticker}..."):
+if st.button("Generate Comprehensive Report"):
+    with st.spinner(f"Fetching sectoral data and generating AI insights for {ticker}..."):
         try:
-            # 1. making a request to the FastAPI backend to get stock data and AI analysis
-            response = requests.get(f"http://127.0.0.1:8000/stock/{ticker}")
+            # making a request to our FastAPI backend to get both financial data and AI analysis
+            response = requests.get(f"{BACKEND_URL}/stock/{ticker}")
             
             if response.status_code == 200:
                 data = response.json()
@@ -44,4 +47,4 @@ if st.button("Run AI Analysis"):
             st.error(f"Could not connect to Backend. Is the FastAPI server running?")
 
 st.markdown("---")
-st.caption("Developed as a CS Student Project")
+st.caption("Developed for Portfolio | Data: Yahoo Finance | AI: OpenAI GPT-4o-mini")

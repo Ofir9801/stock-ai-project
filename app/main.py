@@ -1,8 +1,18 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from app.services.finance_service import get_stock_info
 from app.services.ai_service import get_ai_analysis
 
-app = FastAPI()
+app = FastAPI(title="Stock AI Project API")
+
+# CORS middleware to allow requests from our Streamlit frontend (which runs on a different port)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # allow requests from any origin (useful for development)
+    allow_credentials=True,
+    allow_methods=["*"],  # allow all types of requests (GET, POST, etc.)
+    allow_headers=["*"],  # allow all types of headers
+)
 
 @app.get("/stock/{ticker}")
 def read_stock(ticker: str):
