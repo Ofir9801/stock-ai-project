@@ -15,9 +15,8 @@ st.markdown("---")
 ticker = st.text_input("Enter Stock Ticker (e.g. NVDA, AAPL, MSFT):", "NVDA").upper()
 
 if st.button("Generate Comprehensive Report"):
-    with st.spinner(f"Fetching sectoral data and generating AI insights for {ticker}..."):
+    with st.spinner(f"Analyzing {ticker}..."):
         try:
-            # making a request to our FastAPI backend to get both financial data and AI analysis
             response = requests.get(f"{BACKEND_URL}/stock/{ticker}")
             
             if response.status_code == 200:
@@ -25,22 +24,35 @@ if st.button("Generate Comprehensive Report"):
                 f_data = data['finance_data']
                 ai_data = data['ai_analysis']
 
-                # 2. displaying the data in two columns
-                col1, col2 = st.columns([1, 1])
+                # displaying key metrics in a 4-column layout
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric("Price", f"${f_data['price']}")
+                m2.metric("Sector", f_data['sector'])
+                m3.metric("ETF", f_data['etf_name'])
+
+                # calculating alpha (excess return)
+                alpha = round(f_data['stock_return_1mo'] - f_data['etf_return_1mo'], 2)
+                m4.metric("vs Sector", f"{alpha}%", delta=alpha)
+
+                st.markdown("---")
+
+                col1, col2 = st.columns([1, 1.2])
 
                 with col1:
-                    st.subheader(f"📊 Financials: {f_data['name']}")
-                    st.metric("Current Price", f"${f_data['price']}")
-                    
-                    # adding graph:
-                    st.write("**Price History (Last 30 Days):**")
+                    st.subheader("Price Movement (30D)")
                     st.line_chart(f_data['history'])
                     
-                    st.write("**Business Summary:**")
-                    st.write(f_data['summary'])
+                    with st.expander("Business Summary"):
+                        st.write(f_data['summary'])
+                    
+                    st.write("📰 **Latest News**")
+                    for n in f_data.get('news', []):
+                        st.markdown(f"- [{n['title']}]({n['link']})")
+
                 with col2:
-                    st.subheader("🤖 AI Market Insight")
-                    st.success(ai_data) # displays the analysis in a green box
+                    st.subheader("🤖 AI Analysis & Competitive Outlook")
+                    st.markdown(ai_data)
+
             else:
                 st.error("Ticker not found. Please try again.")
         except Exception as e:
