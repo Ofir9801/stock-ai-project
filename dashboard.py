@@ -47,4 +47,9 @@ if st.button("Generate Comprehensive Report"):
             st.error(f"Could not connect to Backend. Is the FastAPI server running?")
 
 st.markdown("---")
-st.caption("Developed for Portfolio | Data: Yahoo Finance | AI: OpenAI GPT-4o-mini")
+st.warning("""
+**⚠️ Disclaimer:** This tool is for educational purposes only. The AI-generated analysis and financial data 
+provided do not constitute financial advice. The developer is not a licensed financial advisor. 
+Always perform your own due diligence before making investment decisions.
+""")
+st.caption(f"© 2024 Stock AI Project | Data: Yahoo Finance | AI: OpenAI GPT-4o-mini")
