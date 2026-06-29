@@ -17,7 +17,9 @@ ticker = st.text_input("Enter Stock Ticker (e.g. NVDA, AAPL, MSFT):", "NVDA").up
 if st.button("Generate Comprehensive Report"):
     with st.spinner(f"Analyzing {ticker}..."):
         try:
-            response = requests.get(f"{BACKEND_URL}/api/stock/{ticker}")
+            # generous timeout: a cold request hits yfinance AND an LLM, which together
+            # can take well over 10s before the response comes back.
+            response = requests.get(f"{BACKEND_URL}/api/stock/{ticker}", timeout=60)
 
             if response.status_code == 200:
                 data = response.json()
@@ -53,10 +55,14 @@ if st.button("Generate Comprehensive Report"):
                     st.subheader("🤖 AI Analysis & Competitive Outlook")
                     st.markdown(ai_data)
 
+            elif response.status_code == 404:
+                st.error("Ticker not found. Please check the symbol and try again.")
             else:
-                st.error("Ticker not found. Please try again.")
-        except Exception as e:
-            st.error(f"Could not connect to Backend. Is the FastAPI server running?")
+                st.error(f"Backend error ({response.status_code}). Please try again later.")
+        except requests.exceptions.Timeout:
+            st.error("The request took too long (the AI analysis can be slow). Please try again.")
+        except requests.exceptions.RequestException:
+            st.error(f"Could not reach the backend at {BACKEND_URL}. Is the FastAPI server running?")
 
 st.markdown("---")
 st.warning("""

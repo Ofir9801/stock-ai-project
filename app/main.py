@@ -1,3 +1,4 @@
+import os
 import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,12 +10,11 @@ app = FastAPI(title="Stock AI Project API")
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
-# CORS middleware to allow requests from our Streamlit frontend (which runs on a different port).
-# A wildcard origin ("*") combined with allow_credentials=True is invalid/insecure, so we
-# pin a specific origin instead.
+# CORS: the allowed frontend origin is configurable so it works locally and in Docker/cloud.
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:8501")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8501"],
+    allow_origins=[FRONTEND_ORIGIN],
     allow_credentials=True,
     allow_methods=["*"],  # allow all types of requests (GET, POST, etc.)
     allow_headers=["*"],  # allow all types of headers
