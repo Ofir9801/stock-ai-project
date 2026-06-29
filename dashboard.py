@@ -17,8 +17,8 @@ ticker = st.text_input("Enter Stock Ticker (e.g. NVDA, AAPL, MSFT):", "NVDA").up
 if st.button("Generate Comprehensive Report"):
     with st.spinner(f"Analyzing {ticker}..."):
         try:
-            response = requests.get(f"{BACKEND_URL}/stock/{ticker}")
-            
+            response = requests.get(f"{BACKEND_URL}/api/stock/{ticker}")
+
             if response.status_code == 200:
                 data = response.json()
                 f_data = data['finance_data']
@@ -41,10 +41,10 @@ if st.button("Generate Comprehensive Report"):
                 with col1:
                     st.subheader("Price Movement (30D)")
                     st.line_chart(f_data['history'])
-                    
+
                     with st.expander("Business Summary"):
                         st.write(f_data['summary'])
-                    
+
                     st.write("📰 **Latest News**")
                     for n in f_data.get('news', []):
                         st.markdown(f"- [{n['title']}]({n['link']})")
@@ -60,8 +60,8 @@ if st.button("Generate Comprehensive Report"):
 
 st.markdown("---")
 st.warning("""
-**⚠️ Disclaimer:** This tool is for educational purposes only. The AI-generated analysis and financial data 
-provided do not constitute financial advice. The developer is not a licensed financial advisor. 
+**⚠️ Disclaimer:** This tool is for educational purposes only. The AI-generated analysis and financial data
+provided do not constitute financial advice. The developer is not a licensed financial advisor.
 Always perform your own due diligence before making investment decisions.
 """)
 st.caption(f"© 2026 Stock AI Project | Data: Yahoo Finance | AI: OpenAI GPT-4o-mini")

@@ -15,13 +15,23 @@ SECTOR_ETF_MAP = {
     "Materials": "XLB"
 }
 
+def _format_summary(summary: str | None) -> str:
+    """Return a real default when there is no summary, and only truncate if it's actually long."""
+    if not summary:
+        return "No business summary available."
+    if len(summary) > 400:
+        return summary[:400] + "..."
+    return summary
+
+
 def get_stock_info(ticker: str):
 
     stock = yf.Ticker(ticker)
-    info = stock.fast_info
-    if not info or 'last_price' not in info:
-         info = stock.info
-         
+
+    # NOTE: stock.fast_info is faster but only holds price/volume fields. Descriptive
+    # fields (sector, longName, longBusinessSummary) live in stock.info, so we read from there.
+    info = stock.info or {}
+
     # sector information
     sector = info.get("sector", "Unknown")
     industry = info.get("industry", "Unknown")
@@ -32,14 +42,20 @@ def get_stock_info(ticker: str):
         raise ValueError(f"No history found for ticker {ticker}")
 
     stock_prices = hist['Close'].tolist()
-    stock_return = ((stock_prices[-1] / stock_prices[0]) - 1) * 100
-
+    if not stock_prices or stock_prices[0] == 0:
+        stock_return = 0.0 
+    else:
+        stock_return = ((stock_prices[-1] / stock_prices[0]) - 1) * 100
     # comparing to sector ETF
     etf_ticker = SECTOR_ETF_MAP.get(sector, "SPY")
     etf = yf.Ticker(etf_ticker)
     etf_hist = etf.history(period="1mo")
     etf_prices = etf_hist['Close'].tolist()
-    etf_return = ((etf_prices[-1] / etf_prices[0]) - 1) * 100
+    # same guard as the stock return: avoid empty list / division by zero
+    if not etf_prices or etf_prices[0] == 0:
+        etf_return = 0.0
+    else:
+        etf_return = ((etf_prices[-1] / etf_prices[0]) - 1) * 100
 
     raw_news = stock.news
     formatted_news = []
@@ -73,6 +89,6 @@ def get_stock_info(ticker: str):
         "etf_name": etf_ticker,
         "etf_return_1mo": round(etf_return, 2),
         "history": stock_prices,
-        "summary": info.get("longBusinessSummary", "")[:400] + "...",
+        "summary": _format_summary(info.get("longBusinessSummary")),
         "news": formatted_news
     }
