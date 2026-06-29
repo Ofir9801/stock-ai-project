@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.services.finance_service import get_stock_info
 from app.services.ai_service import get_ai_analysis
+from app.services.cache_service import get_cached_analysis, save_analysis
 
 app = FastAPI(title="Stock AI Project API")
 logging.basicConfig(level=logging.ERROR)
@@ -25,7 +26,13 @@ def home():
 
 @app.get("/api/stock/{ticker}")
 def read_stock(ticker: str):
+    ticker = ticker.upper()
     try:
+        # 0. serve from the PostgreSQL cache when we have a fresh entry
+        cached = get_cached_analysis(ticker)
+        if cached is not None:
+            return cached
+
         # 1. syncing actual stock data from Yahoo Finance
         finance_data = get_stock_info(ticker)
 
@@ -35,9 +42,13 @@ def read_stock(ticker: str):
         # 2. sending the data to the AI service to get a comprehensive analysis
         ai_insight = get_ai_analysis(finance_data, news_titles)
 
+        # 3. persist for next time (best-effort; no-op if the DB is down)
+        save_analysis(ticker, finance_data, ai_insight)
+
         return {
             "finance_data": finance_data,
-            "ai_analysis": ai_insight
+            "ai_analysis": ai_insight,
+            "cached": False,
         }
     except ValueError as e:
         # expected "not found" type errors (e.g. invalid ticker / no history)
