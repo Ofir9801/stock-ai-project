@@ -1,22 +1,38 @@
+import os
+import logging
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from app.services.finance_service import get_stock_info
 from app.services.ai_service import get_ai_analysis
+from app.services.cache_service import get_cached_analysis, save_analysis
 
 app = FastAPI(title="Stock AI Project API")
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
 
-# CORS middleware to allow requests from our Streamlit frontend (which runs on a different port)
+# CORS: the allowed frontend origin is configurable so it works locally and in Docker/cloud.
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:8501")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # allow requests from any origin (useful for development)
+    allow_origins=[FRONTEND_ORIGIN],
     allow_credentials=True,
     allow_methods=["*"],  # allow all types of requests (GET, POST, etc.)
     allow_headers=["*"],  # allow all types of headers
 )
+# the following is for testing
+@app.get("/")
+def home():
+    return {"status": "The server is alive"}
 
-@app.get("/stock/{ticker}")
+@app.get("/api/stock/{ticker}")
 def read_stock(ticker: str):
+    ticker = ticker.upper()
     try:
+        # 0. serve from the PostgreSQL cache when we have a fresh entry
+        cached = get_cached_analysis(ticker)
+        if cached is not None:
+            return cached
+
         # 1. syncing actual stock data from Yahoo Finance
         finance_data = get_stock_info(ticker)
 
@@ -26,9 +42,19 @@ def read_stock(ticker: str):
         # 2. sending the data to the AI service to get a comprehensive analysis
         ai_insight = get_ai_analysis(finance_data, news_titles)
 
+        # 3. persist for next time (best-effort; no-op if the DB is down)
+        save_analysis(ticker, finance_data, ai_insight)
+
         return {
             "finance_data": finance_data,
-            "ai_analysis": ai_insight
+            "ai_analysis": ai_insight,
+            "cached": False,
         }
+    except ValueError as e:
+        # expected "not found" type errors (e.g. invalid ticker / no history)
+        logger.error(f"Ticker error for '{ticker}': {e}", exc_info=True)
+        raise HTTPException(status_code=404, detail="Ticker not found or has no available data.")
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Stock {ticker} not found")
+        # log the full error internally, return a generic message to the client
+        logger.error(f"Unexpected server error for '{ticker}': {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="An internal error occurred while processing the request.")
