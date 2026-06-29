@@ -70,4 +70,4 @@ st.warning("""
 provided do not constitute financial advice. The developer is not a licensed financial advisor.
 Always perform your own due diligence before making investment decisions.
 """)
-st.caption(f"© 2026 Stock AI Project | Data: Yahoo Finance | AI: OpenAI GPT-4o-mini")
+st.caption("© 2026 Stock AI Project | Data: Yahoo Finance | AI: OpenAI / Claude")
