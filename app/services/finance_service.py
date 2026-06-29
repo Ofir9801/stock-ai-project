@@ -18,8 +18,10 @@ SECTOR_ETF_MAP = {
 def get_stock_info(ticker: str):
 
     stock = yf.Ticker(ticker)
-    info = stock.info
-
+    info = stock.fast_info
+    if not info or 'last_price' not in info:
+         info = stock.info
+         
     # sector information
     sector = info.get("sector", "Unknown")
     industry = info.get("industry", "Unknown")

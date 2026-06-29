@@ -13,6 +13,10 @@ app.add_middleware(
     allow_methods=["*"],  # allow all types of requests (GET, POST, etc.)
     allow_headers=["*"],  # allow all types of headers
 )
+# the following is for testing
+@app.get("/")
+def home():
+    return {"status": "The server is alive"}
 
 @app.get("/stock/{ticker}")
 def read_stock(ticker: str):
@@ -31,4 +35,6 @@ def read_stock(ticker: str):
             "ai_analysis": ai_insight
         }
     except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Stock {ticker} not found")
+        #raise HTTPException(status_code=404, detail=f"Stock {ticker} not found")
+        raise HTTPException(status_code=500, detail=str(e))
+
