@@ -1,0 +1,11 @@
+# kind cluster config: maps host port 8501 -> the frontend NodePort (30851),
+# so you can open http://localhost:8501 on your machine.
+#   kind create cluster --name stock-ai --config k8s/kind-config.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30851
+        hostPort: 8501
+        protocol: TCP

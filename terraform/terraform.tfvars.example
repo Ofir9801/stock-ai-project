@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars and adjust. terraform.tfvars is gitignored.
+aws_region = "us-east-1"
+project    = "stock-ai"
+
+# AI keys are OPTIONAL (the app falls back to mock analysis without them).
+# Prefer leaving these out and setting the values in Secrets Manager after apply,
+# rather than committing real keys to a tfvars file.
+# openai_api_key    = "sk-..."
+# anthropic_api_key = "sk-ant-..."

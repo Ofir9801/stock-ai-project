@@ -1,4 +1,16 @@
-﻿.env
+.env
 venv/
 __pycache__/
 .DS_Store
+
+# Kubernetes secret with real values (use app-secrets.example.yaml as the template)
+k8s/app-secrets.yaml
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform.lock.hcl
+crash.log
