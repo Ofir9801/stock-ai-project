@@ -1,168 +1,143 @@
-# 📈 AI Stock Research Dashboard
+# AI Stock Research Dashboard
 
-> A full-stack web application that combines real-time financial data with AI-powered sentiment analysis, built with Python, FastAPI, and Streamlit.
+A full-stack financial research tool. Enter a ticker and it pulls live market data,
+compares the stock's one-month return against its sector ETF, and generates an
+analyst-style write-up using a large language model. Built as a portfolio project to
+practise end-to-end engineering: a typed API, a caching layer, containers, tests, CI,
+and infrastructure-as-code for both Kubernetes and AWS.
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat-square&logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-green?style=flat-square&logo=fastapi)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-red?style=flat-square&logo=streamlit)
-![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
+[![CI](https://github.com/ofir9801/stock-ai-project/actions/workflows/ci.yml/badge.svg)](https://github.com/ofir9801/stock-ai-project/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.13-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
----
+> Educational project only — the analysis is not financial advice.
 
-## 🚀 Live Demo
+## How it works
 
-👉 **[View Live App](https://your-app.onrender.com)**
-
----
-
-## 📸 Screenshots
-
-> 
-
----
-
-## ✨ Features
-
-- **Real-time stock data** — Fetches live prices and 30-day price history via `yfinance`
-- **AI-powered sentiment analysis** — Analyzes company news and fundamentals using Claude AI
-- **Interactive charts** — Visualizes price trends with Plotly
-- **Business summary** — Auto-fetches company description and key metrics
-- **Clean REST API** — Modular FastAPI backend with clear service separation
-
----
-
-## 🛠️ Tech Stack
-
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Frontend | Streamlit + Plotly | Interactive UI & charts |
-| Backend | FastAPI + Uvicorn | REST API server |
-| Data | yFinance + Pandas | Financial data fetching & processing |
-| AI | OpenAI API (GPT-4o) | Sentiment analysis & research |
-| Config | python-dotenv | Secure environment variable management |
-| Deploy | Render / Streamlit Cloud | Cloud hosting |
-
----
-
-## 📁 Project Structure
-
-```
-stock-ai-dashboard/
-├── app/
-│   ├── main.py               # FastAPI server & routes
-│   └── services/
-│       ├── finance_service.py  # yFinance data fetching
-│       └── ai_service.py       # Claude AI integration
-├── dashboard.py              # Streamlit frontend
-├── requirements.txt
-├── .env.example              # Environment variable template
-├── .gitignore
-└── README.md
+```mermaid
+flowchart LR
+    U[Browser] --> F[Streamlit frontend]
+    F --> B[FastAPI backend]
+    B -->|cache hit/miss| P[(PostgreSQL)]
+    B -->|prices & news| Y[yfinance]
+    B -->|analysis| L[LLM router<br/>OpenAI / Claude]
 ```
 
----
+1. The backend checks PostgreSQL for a recent (≤1h) cached result for the ticker.
+2. On a miss, it fetches prices, history and news from `yfinance`, computes the
+   stock's return versus its sector ETF, and sends the data to an LLM.
+3. The result is cached and returned. The frontend renders the price chart, the
+   sector comparison ("alpha"), the news, and the AI write-up.
 
-## ⚡ Quick Start
+If no AI key is configured the backend returns a deterministic mock, so the app runs
+end-to-end out of the box.
 
-### Prerequisites
-- Python 3.10+
-- An Openai API key 
+## Tech stack
 
-### Installation
+| Area | Choice | Notes |
+|------|--------|-------|
+| Backend | FastAPI + Uvicorn | `GET /api/stock/{ticker}` |
+| Frontend | Streamlit | Charts, metrics, news, analysis |
+| Market data | yfinance + pandas | Prices, history, sector ETF, news |
+| AI | OpenAI + Anthropic (Claude) | Provider router with mock fallback |
+| Cache | PostgreSQL + SQLAlchemy | Per-ticker, TTL-based |
+| Containers | Docker + Docker Compose | One command for the whole stack |
+| Tests / CI | pytest + ruff + GitHub Actions | Lint and tests on every push/PR |
+| Orchestration | Kubernetes (kind) | Manifests under `k8s/` |
+| Cloud | AWS via Terraform | ECR, ECS Fargate, RDS, Secrets Manager, ALB |
+
+### Multi-model AI routing
+
+`AI_PROVIDER` selects the provider: `auto` (prefer Claude, fall back to OpenAI, then a
+mock), or force `claude` / `openai`. Each provider is a small adapter behind a shared
+prompt builder, so adding another is a single function. Failures are logged in full
+server-side and surfaced to the client as a generic message.
+
+## Run it locally
+
+### With Docker Compose (recommended)
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/ofir9801/stock-ai-dashboard.git
-cd stock-ai-dashboard
+cp .env.example .env        # optional: add OPENAI_API_KEY / ANTHROPIC_API_KEY
+docker compose up --build
+```
 
-# 2. Create and activate virtual environment
+- Dashboard: http://localhost:8501
+- API: http://localhost:8000  (docs at `/docs`)
+
+Compose runs PostgreSQL, the backend and the frontend, wired together with
+health-check gating so the backend only starts once the database is ready.
+
+### Without Docker
+
+```bash
 python -m venv venv
-source venv/bin/activate   # Mac/Linux
-venv\Scripts\activate      # Windows
-
-# 3. Install dependencies
+venv\Scripts\activate                 # Windows  (use source venv/bin/activate on macOS/Linux)
 pip install -r requirements.txt
 
-# 4. Set up environment variables
-cp .env.example .env
-# Add your API key to .env:
-# ANTHROPIC_API_KEY=your_key_here
+uvicorn app.main:app --reload         # terminal 1 — backend
+streamlit run dashboard.py            # terminal 2 — frontend
 ```
 
-### Running the App
+Without a running PostgreSQL the app still works — caching simply turns itself off.
+
+## Configuration
+
+All configuration is via environment variables (see `.env.example`):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `AI_PROVIDER` | `auto` | `auto` / `claude` / `openai` |
+| `OPENAI_API_KEY` | – | Enables the OpenAI provider |
+| `ANTHROPIC_API_KEY` | – | Enables the Claude provider |
+| `CLAUDE_MODEL` | `claude-opus-4-8` | Override the Claude model |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Override the OpenAI model |
+| `DATABASE_URL` | local Postgres | SQLAlchemy connection string |
+| `CACHE_TTL_SECONDS` | `3600` | How long a cached analysis stays fresh |
+| `BACKEND_URL` | `http://127.0.0.1:8000` | Where the frontend calls the API |
+| `FRONTEND_ORIGIN` | `http://localhost:8501` | Allowed CORS origin |
+
+## Tests
 
 ```bash
-# Terminal 1 — Start the backend
-uvicorn app.main:app --reload
-
-# Terminal 2 — Start the frontend
-streamlit run dashboard.py
+pip install -r requirements-dev.txt
+ruff check .
+pytest -v
 ```
 
-Open your browser at `http://localhost:8501` 🎉
+The suite mocks `yfinance`, the LLM and the database, so it needs no network or
+credentials. GitHub Actions runs the same lint and tests on every push and PR.
 
----
+## Deployment
 
-## 🔌 API Endpoints
+- **Kubernetes (local, via kind):** manifests and step-by-step instructions in
+  [`k8s/README.md`](k8s/README.md) — Deployments, Services, ConfigMaps, Secrets, a
+  PVC for Postgres, health probes and an HPA.
+- **AWS (Terraform):** ECR, ECS Fargate (two services with Cloud Map service
+  discovery), RDS PostgreSQL, Secrets Manager and an ALB — see
+  [`terraform/README.md`](terraform/README.md).
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/stock/{ticker}` | Get stock data + AI analysis for a ticker symbol |
-| `GET` | `/health` | Health check |
+## Project structure
 
-**Example:**
-```bash
-curl http://localhost:8000/stock/AAPL
+```
+.
+├── app/
+│   ├── main.py                 # FastAPI app and routes
+│   ├── db.py                   # SQLAlchemy engine + cache model
+│   └── services/
+│       ├── finance_service.py  # yfinance data + sector-ETF comparison
+│       ├── ai_service.py       # multi-model LLM router
+│       └── cache_service.py    # PostgreSQL read/write with TTL
+├── dashboard.py                # Streamlit frontend
+├── tests/                      # pytest suite
+├── Dockerfile.backend
+├── Dockerfile.frontend
+├── docker-compose.yml
+├── k8s/                        # Kubernetes manifests (kind)
+├── terraform/                  # AWS infrastructure-as-code
+└── .github/workflows/ci.yml    # lint + tests
 ```
 
-**Response:**
-```json
-{
-  "symbol": "AAPL",
-  "current_price": 189.5,
-  "sentiment": "Bullish",
-  "ai_analysis": "Apple shows strong fundamentals with...",
-  "history": { ... }
-}
-```
-
----
-
-## 🔐 Environment Variables
-
-Create a `.env` file based on `.env.example`:
-
-```env
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-```
-
-> ⚠️ Never commit your `.env` file to Git. It's already in `.gitignore`.
-
----
-
-## 🗺️ Roadmap
-
-- [x] Real-time stock price fetching
-- [x] 30-day historical chart
-- [x] AI sentiment analysis
-- [x] Business summary display
-- [ ] News feed integration (NewsAPI)
-- [ ] Multi-stock comparison
-- [ ] Portfolio tracker
-- [ ] Price alerts via email
-
----
-
-## 🤝 Contributing
-
-Pull requests are welcome. For major changes, please open an issue first.
-
----
-
-## 📄 License
+## License
 
 MIT © [Ofir Eren](https://github.com/ofir9801)
-
----
-
-*Built as a portfolio project to explore the intersection of financial data and AI-powered analysis.*
