@@ -1,0 +1,10 @@
+# Backend (FastAPI) runtime dependencies.
+fastapi==0.136.3
+uvicorn==0.48.0
+yfinance==1.4.1
+pandas==3.0.3
+SQLAlchemy>=2.0.0
+psycopg2-binary>=2.9.9
+anthropic>=0.40.0
+openai==2.38.0
+python-dotenv==1.2.2
