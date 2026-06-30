@@ -1,8 +1,8 @@
 import os
 import logging
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from app.db import get_session, StockCache
+from app.db import get_session, StockCache, utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ def get_cached_analysis(ticker: str):
         return None
     try:
         row = session.get(StockCache, ticker)
-        if row and (datetime.utcnow() - row.updated_at) < CACHE_TTL:
+        if row and (utcnow() - row.updated_at) < CACHE_TTL:
             return {
                 "finance_data": row.data,
                 "ai_analysis": row.ai_analysis,
@@ -43,7 +43,7 @@ def save_analysis(ticker: str, finance_data: dict, ai_analysis: str) -> None:
             session.add(row)
         row.data = finance_data
         row.ai_analysis = ai_analysis
-        row.updated_at = datetime.utcnow()
+        row.updated_at = utcnow()
         session.commit()
     except Exception as e:
         session.rollback()
