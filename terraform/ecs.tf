@@ -45,9 +45,9 @@ resource "aws_ecs_task_definition" "backend" {
 
   container_definitions = jsonencode([
     {
-      name      = "backend"
-      image     = "${aws_ecr_repository.backend.repository_url}:${var.image_tag}"
-      essential = true
+      name         = "backend"
+      image        = "${aws_ecr_repository.backend.repository_url}:${var.image_tag}"
+      essential    = true
       portMappings = [{ containerPort = 8000, protocol = "tcp" }]
       environment = [
         { name = "AI_PROVIDER", value = var.ai_provider },
@@ -101,9 +101,9 @@ resource "aws_ecs_task_definition" "frontend" {
 
   container_definitions = jsonencode([
     {
-      name      = "frontend"
-      image     = "${aws_ecr_repository.frontend.repository_url}:${var.image_tag}"
-      essential = true
+      name         = "frontend"
+      image        = "${aws_ecr_repository.frontend.repository_url}:${var.image_tag}"
+      essential    = true
       portMappings = [{ containerPort = 8501, protocol = "tcp" }]
       environment = [
         { name = "BACKEND_URL", value = "http://backend.${aws_service_discovery_private_dns_namespace.main.name}:8000" },
