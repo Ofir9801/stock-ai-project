@@ -19,7 +19,7 @@ if st.button("Generate Comprehensive Report"):
         try:
             # generous timeout: a cold request hits yfinance AND an LLM, which together
             # can take well over 10s before the response comes back.
-            response = requests.get(f"{BACKEND_URL}/api/stock/{ticker}", timeout=60)
+            response = requests.get(f"{BACKEND_URL}/api/stock/{ticker}", timeout=30)
 
             if response.status_code == 200:
                 data = response.json()
