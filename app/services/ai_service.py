@@ -10,8 +10,12 @@ logger = logging.getLogger(__name__)
 SYSTEM_PROMPT = "You are a professional financial analyst."
 
 # Default model per provider (override via env without touching code).
+# Cost-conscious defaults; bump to a larger model via env for deeper analysis.
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-4-8")
+CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-haiku-4-5")
+
+# Hard timeout (seconds) for an LLM call, so a hung provider can't tie up a worker.
+AI_TIMEOUT_SECONDS = float(os.getenv("AI_TIMEOUT_SECONDS", "30"))
 
 
 def _placeholder(value: str | None) -> bool:
@@ -46,22 +50,21 @@ def _build_prompt(stock_data: dict, news_titles: list) -> str:
 def _analyze_with_claude(prompt: str) -> str:
     from anthropic import Anthropic
 
-    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"), timeout=AI_TIMEOUT_SECONDS)
     message = client.messages.create(
         model=CLAUDE_MODEL,
-        max_tokens=2048,
-        thinking={"type": "adaptive"},  # let Claude decide how much to reason per request
+        max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
-    # response.content is a list of blocks (thinking + text); keep only the text
+    # response.content is a list of blocks; keep only the text blocks
     return "".join(block.text for block in message.content if block.type == "text")
 
 
 def _analyze_with_openai(prompt: str) -> str:
     from openai import OpenAI
 
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), timeout=AI_TIMEOUT_SECONDS)
     response = client.chat.completions.create(
         model=OPENAI_MODEL,
         messages=[

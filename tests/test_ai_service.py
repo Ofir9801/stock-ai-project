@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from app.services import ai_service as ai
 
 
@@ -45,3 +47,37 @@ def test_get_ai_analysis_routes_to_claude(monkeypatch):
     out = ai.get_ai_analysis(stock, ["headline one"])
     assert out == "claude analysis"
     assert "NVDA" in called["prompt"]  # prompt was built and passed through
+
+
+def test_analyze_with_claude_extracts_only_text_blocks(monkeypatch):
+    import anthropic
+
+    # response with a (empty) thinking block followed by a text block
+    fake_message = SimpleNamespace(content=[
+        SimpleNamespace(type="thinking", text=""),
+        SimpleNamespace(type="text", text="hello from claude"),
+    ])
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.messages = SimpleNamespace(create=lambda **kw: fake_message)
+
+    monkeypatch.setattr(anthropic, "Anthropic", FakeClient)
+    assert ai._analyze_with_claude("prompt") == "hello from claude"
+
+
+def test_analyze_with_openai_extracts_message_content(monkeypatch):
+    import openai
+
+    fake_response = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="hello from openai"))]
+    )
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.chat = SimpleNamespace(
+                completions=SimpleNamespace(create=lambda **kw: fake_response)
+            )
+
+    monkeypatch.setattr(openai, "OpenAI", FakeClient)
+    assert ai._analyze_with_openai("prompt") == "hello from openai"

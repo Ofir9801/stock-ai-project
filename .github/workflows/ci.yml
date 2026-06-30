@@ -9,7 +9,6 @@ on:
 jobs:
   lint-and-test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -30,3 +29,46 @@ jobs:
 
       - name: Run tests (pytest)
         run: pytest -v
+
+  docker-build:
+    # Ensures both Dockerfiles still build (deps resolve, images assemble)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -f Dockerfile.backend -t stock-ai-backend:ci .
+      - name: Build frontend image
+        run: docker build -f Dockerfile.frontend -t stock-ai-frontend:ci .
+
+  terraform:
+    # Static validation of the AWS infrastructure code (no apply, no credentials)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.5"
+      - name: Format check
+        run: terraform fmt -check -recursive
+        continue-on-error: true # report drift without blocking
+      - name: Init (no backend) and validate
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+  k8s-validate:
+    # Validate Kubernetes manifests against the upstream schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform
+        run: |
+          curl -sSLo kubeconform.tar.gz \
+            https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar xzf kubeconform.tar.gz
+          sudo mv kubeconform /usr/local/bin/
+      - name: Validate manifests
+        run: kubeconform -strict -summary -ignore-missing-schemas k8s/manifests/

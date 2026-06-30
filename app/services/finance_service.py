@@ -28,9 +28,19 @@ def get_stock_info(ticker: str):
 
     stock = yf.Ticker(ticker)
 
-    # NOTE: stock.fast_info is faster but only holds price/volume fields. Descriptive
-    # fields (sector, longName, longBusinessSummary) live in stock.info, so we read from there.
-    info = stock.info or {}
+    # Descriptive fields (sector, longName, longBusinessSummary) live in stock.info,
+    # which is yfinance's slowest and most failure-prone call. Wrap it so a transient
+    # error degrades to "Unknown" fields instead of crashing the whole request.
+    try:
+        info = stock.info or {}
+    except Exception:
+        info = {}
+
+    # Price comes from fast_info (fast and reliable); fall back to .info, then 0.
+    try:
+        fast_price = stock.fast_info.last_price
+    except Exception:
+        fast_price = None
 
     # sector information
     sector = info.get("sector", "Unknown")
@@ -82,7 +92,7 @@ def get_stock_info(ticker: str):
     return {
         "name": info.get("longName", ticker),
         "symbol": ticker,
-        "price": info.get("currentPrice", 0),
+        "price": info.get("currentPrice") or fast_price or 0,
         "sector": sector,
         "industry": industry,
         "stock_return_1mo": round(stock_return, 2),

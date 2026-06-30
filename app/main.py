@@ -1,14 +1,26 @@
 import os
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from app.db import init_db
 from app.services.finance_service import get_stock_info
 from app.services.ai_service import get_ai_analysis
 from app.services.cache_service import get_cached_analysis, save_analysis
 
-app = FastAPI(title="Stock AI Project API")
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialise the DB once at startup (single-threaded), so requests don't race
+    # to create the engine. Safe to no-op if the DB is unavailable.
+    init_db()
+    yield
+
+
+app = FastAPI(title="Stock AI Project API", lifespan=lifespan)
 
 # CORS: the allowed frontend origin is configurable so it works locally and in Docker/cloud.
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:8501")

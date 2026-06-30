@@ -14,6 +14,7 @@ def _make_ticker(info, close_prices, news=None):
     """
     ticker = MagicMock()
     ticker.info = info
+    ticker.fast_info.last_price = close_prices[-1] if close_prices else None
     ticker.history.return_value = pd.DataFrame({"Close": close_prices})
     ticker.news = news or []
     return ticker
@@ -55,6 +56,39 @@ def test_etf_return_guarded_against_empty_history():
         result = fs.get_stock_info("XOM")
 
     assert result["etf_return_1mo"] == 0.0
+
+
+def test_news_formatting_and_link_fixup():
+    stock = _make_ticker(
+        {"sector": "Technology", "longName": "X Corp", "currentPrice": 10},
+        [100, 110],
+        news=[
+            {"title": "Relative link", "link": "/news/1", "publisher": "Yahoo"},
+            {"headline": "Headline fallback", "url": "https://example.com/2"},
+        ],
+    )
+    etf = _make_ticker({}, [50, 55])
+
+    with patch("app.services.finance_service.yf.Ticker", side_effect=[stock, etf]):
+        result = fs.get_stock_info("X")
+
+    news = result["news"]
+    # internal "/..." links are rewritten to absolute Yahoo URLs
+    assert news[0]["link"] == "https://finance.yahoo.com/news/1"
+    # title falls back to "headline", link falls back to "url"
+    assert news[1]["title"] == "Headline fallback"
+    assert news[1]["link"] == "https://example.com/2"
+
+
+def test_price_falls_back_to_fast_info_when_info_lacks_currentprice():
+    # .info has no currentPrice -> price should come from fast_info.last_price (110)
+    stock = _make_ticker({"sector": "Energy", "longName": "Exxon"}, [100, 110])
+    etf = _make_ticker({}, [50, 55])
+
+    with patch("app.services.finance_service.yf.Ticker", side_effect=[stock, etf]):
+        result = fs.get_stock_info("XOM")
+
+    assert result["price"] == 110
 
 
 def test_summary_default_and_truncation():

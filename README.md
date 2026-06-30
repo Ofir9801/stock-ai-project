@@ -138,6 +138,20 @@ credentials. GitHub Actions runs the same lint and tests on every push and PR.
 └── .github/workflows/ci.yml    # lint + tests
 ```
 
+## Design notes
+
+A few deliberate trade-offs, called out so they don't read as oversights:
+
+- **Schema management.** The single cache table is created on boot via SQLAlchemy's
+  `create_all`. That's fine for one table but can't evolve columns safely — a
+  production project would use Alembic migrations. Left out to keep scope tight.
+- **Database placement on AWS.** RDS sits in the (cost-saving, NAT-free) public
+  subnets but is *not* publicly accessible — only the ECS security group can reach it.
+  Private subnets would be stricter, at the cost of a NAT gateway.
+- **Sync endpoints.** The API uses sync handlers, which FastAPI runs in a threadpool.
+  Simple and fine at this scale; LLM/`yfinance` calls carry explicit timeouts so a slow
+  upstream can't pin a worker indefinitely. A high-throughput version would go async.
+
 ## License
 
 MIT © [Ofir Eren](https://github.com/ofir9801)
