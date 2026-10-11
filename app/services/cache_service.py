@@ -10,18 +10,22 @@ logger = logging.getLogger(__name__)
 CACHE_TTL = timedelta(seconds=int(os.getenv("CACHE_TTL_SECONDS", "3600")))
 
 
-def get_cached_analysis(ticker: str):
-    """Return a fresh cached payload for the ticker, or None on miss / DB down."""
+def get_cached_analysis(ticker: str, allow_stale: bool = False):
+    """Fresh cached payload, or (allow_stale) the last known one, or None."""
     session = get_session()
     if session is None:
         return None
     try:
         row = session.get(StockCache, ticker)
-        if row and (utcnow() - row.updated_at) < CACHE_TTL:
+        if row is None:
+            return None
+        fresh = (utcnow() - row.updated_at) < CACHE_TTL
+        if fresh or allow_stale:
             return {
                 "finance_data": row.data,
                 "ai_analysis": row.ai_analysis,
                 "cached": True,
+                "stale": not fresh,
             }
         return None
     except Exception as e:

@@ -6,6 +6,12 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+AI_UNAVAILABLE_MSG = "⚠️ AI analysis is temporarily unavailable. Please try again later."
+
+def is_fallback_analysis(text: str) -> bool:
+    """True for error / mock text that must never be cached as a real analysis."""
+    return text == AI_UNAVAILABLE_MSG or text.startswith("🤖 [MOCK")
+
 # System persona shared by every provider.
 SYSTEM_PROMPT = "You are a professional financial analyst."
 
@@ -25,6 +31,10 @@ def _placeholder(value: str | None) -> bool:
 
 def _build_prompt(stock_data: dict, news_titles: list) -> str:
     news_context = "\n".join(f"- {t}" for t in news_titles) if news_titles else "No major headlines."
+    
+    etf_ret = stock_data["etf_return_1mo"]
+    etf_ret_text = f"{etf_ret}%" if etf_ret is not None else "unavailable"
+
     return f"""
     Analyze {stock_data['name']} ({stock_data['symbol']}).
 
@@ -32,7 +42,7 @@ def _build_prompt(stock_data: dict, news_titles: list) -> str:
     Industry: {stock_data['industry']}
 
     Stock 1-month Return: {stock_data['stock_return_1mo']}%
-    Sector ETF ({stock_data['etf_name']}) Return: {stock_data['etf_return_1mo']}%
+    Sector ETF ({stock_data['etf_name']}) Return: {etf_ret_text}
 
     Business Summary:
     {stock_data['summary']}
@@ -50,7 +60,7 @@ def _build_prompt(stock_data: dict, news_titles: list) -> str:
 def _analyze_with_claude(prompt: str) -> str:
     from anthropic import Anthropic
 
-    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"), timeout=AI_TIMEOUT_SECONDS)
+    client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"), timeout=AI_TIMEOUT_SECONDS, max_retries=1)
     message = client.messages.create(
         model=CLAUDE_MODEL,
         max_tokens=1024,
@@ -124,4 +134,4 @@ def get_ai_analysis(stock_data: dict, news_titles: list) -> str:
     except Exception as e:
         # log the full error internally, return a generic message to the client
         logger.error(f"AI analysis failed (provider={provider}): {e}", exc_info=True)
-        return "⚠️ AI analysis is temporarily unavailable. Please try again later."
+        return AI_UNAVAILABLE_MSG

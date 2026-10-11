@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>הכנה לראיון</title>
+<style>
+  @page { size: A4; margin: 18mm; }
+  body {
+    font-family: "Rubik", "Heebo", "Assistant", "Arial Hebrew", Arial, sans-serif;
+    direction: rtl;
+    font-size: 11.5pt;
+    line-height: 1.75;
+    color: #1a1a2e;
+  }
+  h1 { font-size: 20pt; margin: 0 0 2px; color: #17223b; }
+  .sub { color: #5b6478; font-size: 10.5pt; margin: 0 0 14px; }
+  h2 {
+    font-size: 14pt; color: #1d4ed8; margin: 22px 0 8px;
+    border-bottom: 2px solid #1d4ed8; padding-bottom: 4px;
+  }
+  h3 { font-size: 11.5pt; color: #0e7490; margin: 14px 0 4px; }
+  p { margin: 0 0 9px; }
+  .en { direction: ltr; unicode-bidi: isolate; }
+  .script {
+    background: #f5f7ff; border-inline-start: 4px solid #1d4ed8;
+    padding: 10px 14px; margin: 8px 0 14px; border-radius: 4px;
+  }
+  .script p { margin: 0 0 7px; }
+  .script p:last-child { margin-bottom: 0; }
+  .time { color: #1d4ed8; font-weight: 700; font-size: 9.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 14px; }
+  th, td { border: 1px solid #d4d8e2; padding: 8px 11px; text-align: start; vertical-align: top; }
+  th { background: #17223b; color: #fff; font-weight: 700; font-size: 10.5pt; }
+  td { font-size: 10.5pt; }
+  tr:nth-child(even) td { background: #fafbfd; }
+  .term { font-weight: 700; color: #17223b; white-space: nowrap; }
+  .warn {
+    background: #fff7ed; border: 1px solid #fdba74;
+    padding: 10px 14px; margin: 10px 0; border-radius: 4px; font-size: 10.5pt;
+  }
+  .warn b { color: #9a3412; }
+  .tip {
+    background: #ecfdf5; border: 1px solid #a7f3d0;
+    padding: 10px 14px; margin: 10px 0; border-radius: 4px; font-size: 10.5pt;
+  }
+  ul { margin: 0 0 10px; padding-inline-start: 20px; }
+  li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<h1>הכנה לראיון: שתי התשובות המרכזיות</h1>
+<p class="sub">פרויקט <span class="en">AI Stock Research Dashboard</span> · אופיר ערן</p>
+
+<h2>חלק א' — הפתיח: "ספר לי על הפרויקט"</h2>
+
+<p>זו השאלה הוודאית ביותר בכל ראיון. המבנה הוא ארבעה חלקים בסדר קבוע: מי אני, מה המערכת
+עושה, איך היא בנויה, ומה בניתי סביבה. הטקסט למטה הוא לשינון, כשישים שניות.</p>
+
+<h3>1. מי אני <span class="time">(כ-10 שניות)</span></h3>
+<div class="script">
+  <p>אני אופיר, מתחיל שנה ג' למדעי המחשב באקדמית תל אביב. בזמן החלמה מפציעה רציתי לבנות
+  משהו שלם בעצמי, ומניות תמיד עניינו אותי, אז בניתי אפליקציית מחקר מניות מקצה לקצה.</p>
+</div>
+
+<h3>2. מה המערכת עושה <span class="time">(כ-15 שניות)</span></h3>
+<div class="script">
+  <p>המשתמש מזין סימול של מניה. המערכת מושכת מחירים והיסטוריה של חודש, משווה את תשואת
+  המניה לתשואת תעודת הסל של הסקטור שלה, כלומר בודקת אם היא הכתה את הענף, ומודל שפה מייצר
+  ניתוח קצר: ציון סנטימנט, טיעוני קנייה ומכירה, והשוואה לסקטור.</p>
+</div>
+
+<h3>3. איך היא בנויה <span class="time">(כ-20 שניות)</span></h3>
+<div class="script">
+  <p>ממשק ב-<span class="en">Streamlit</span> שמדבר ב-<span class="en">HTTP</span> עם שרת
+  <span class="en">FastAPI</span>. השרת בודק קודם מטמון ב-<span class="en">PostgreSQL</span>,
+  ורק אם אין שם תוצאה טרייה הוא מושך נתונים חיים ופונה למודל. יש שכבת ניתוב שמאפשרת להחליף
+  בין <span class="en">Claude</span> ל-<span class="en">OpenAI</span> דרך משתנה סביבה, ואם אין
+  מפתח כלל, המערכת מחזירה ניתוח מדומה כדי שהיא תרוץ מקצה לקצה גם בלי הרשאות.</p>
+</div>
+
+<h3>4. מה בניתי סביב זה <span class="time">(כ-15 שניות)</span></h3>
+<div class="script">
+  <p>ארזתי את שני השירותים בקונטיינרים והרצתי אותם יחד עם <span class="en">Docker Compose</span>,
+  כתבתי תשע עשרה בדיקות אוטומטיות שרצות ב-<span class="en">GitHub Actions</span> בכל דחיפת קוד,
+  וכתבתי תשתית ב-<span class="en">Terraform</span> ל-<span class="en">AWS</span> ומניפסטים
+  ל-<span class="en">Kubernetes</span>. שניהם מאומתים אוטומטית באותו תהליך.</p>
+</div>
+
+<div class="warn">
+  <b>שלושה משפטים שאסור לומר:</b>
+  <ul>
+    <li><b>"פרסתי בענן"</b> — לא הרצת <span class="en">terraform apply</span>. אמור: "כתבתי
+    ואימתתי את התשתית; לא הרצתי אותה בפועל כי <span class="en">RDS</span> ו-<span class="en">ALB</span>
+    עולים כסף חודשי."</li>
+    <li><b>"הרצתי קוברנטיס"</b> — אם לא הרמת אשכול, אמור: "כתבתי מניפסטים ל-<span class="en">Kubernetes</span>".</li>
+    <li><b>"אני לא זוכר הרבה מהקורס"</b> — אל תתנדב לספר מה שכחת. תאר מה למדת ועצור.</li>
+  </ul>
+</div>
+
+<div class="tip">
+  <b>דיוק שכבות:</b> ה-<span class="en">backend</span> שלך הוא <span class="en">FastAPI</span>.
+  <span class="en">Render</span> היא פלטפורמת האירוח שבה הוא רץ. אלה שתי שכבות שונות, אל תערבב ביניהן.
+</div>
+
+<h2>חלק ב' — שישה מונחי יסוד</h2>
+
+<p>לכל מונח: הגדרה מדויקת במשפט אחד, ומיד אחריה הקישור לקוד שלך. החיבור בין התיאוריה
+לפרויקט הוא מה שמבדיל תשובה של סטודנט מתשובה של מהנדס.</p>
+
+<table>
+  <tr>
+    <th style="width:22%">מונח</th>
+    <th style="width:42%">ההגדרה</th>
+    <th style="width:36%">איפה זה אצלך</th>
+  </tr>
+  <tr>
+    <td class="term">סיבוכיות חיפוש<br><span class="en">list</span> מול <span class="en">dict</span></td>
+    <td>חיפוש איבר ברשימה הוא <span class="en">O(n)</span>, כי עוברים איבר אחר איבר. במילון
+    זה <span class="en">O(1)</span> בממוצע, כי המילון ממומש כטבלת גיבוב: מחשבים
+    <span class="en">hash</span> של המפתח וקופצים ישירות אליו. לכן המפתח חייב להיות
+    בלתי משתנה, אחרת ה-<span class="en">hash</span> יפסיק להצביע למקום הנכון.</td>
+    <td>המילון <span class="en">SECTOR_ETF_MAP</span> ממפה סקטור לתעודת סל בגישה מיידית.
+    השורה <span class="en">.get(sector, "SPY")</span> מחזירה <span class="en">SPY</span>,
+    מדד השוק הרחב, כברירת מחדל כשהסקטור לא במפה.</td>
+  </tr>
+  <tr>
+    <td class="term"><span class="en">PRIMARY KEY</span></td>
+    <td>מעבר לייחודיות, מפתח ראשי יוצר אוטומטית <b>אינדקס</b>, ובפוסטגרס זהו אינדקס
+    מסוג עץ חיפוש מאוזן. בלי אינדקס השליפה סורקת את כל הטבלה, כלומר
+    <span class="en">O(n)</span>; עם אינדקס היא לוגריתמית. הוא גם מרמז
+    <span class="en">NOT NULL</span>.</td>
+    <td>עמודת הסימול היא המפתח הראשי בטבלת המטמון, ולכן שליפת מניה נשארת מהירה
+    גם כשהטבלה גדלה.</td>
+  </tr>
+  <tr>
+    <td class="term">אידמפוטנטיות<br><span class="en">idempotent</span></td>
+    <td>פעולה שביצוע חוזר שלה אינו משנה את מצב המערכת מעבר לביצוע הראשון.
+    <span class="en">GET</span> אמור להיות בטוח ואידמפוטנטי.</td>
+    <td>חמש קריאות לאותו סימול יחזירו את אותו תוכן. יש תופעת לוואי אחת, כתיבה למטמון
+    בקריאה הראשונה, אבל היא לא משנה מצב שהמשתמש רואה. מה שכן משתנה הוא השדה
+    <span class="en">cached</span> וזמן התגובה.</td>
+  </tr>
+  <tr>
+    <td class="term"><span class="en">Mock</span> בבדיקות</td>
+    <td>אובייקט מזויף שמחליף תלות אמיתית בזמן בדיקה. שלוש סיבות: דטרמיניזם, כי אני שולט
+    בנתונים שחוזרים; מהירות, כי אין קריאות רשת; ויציבות, כי הבדיקה לא נשברת כשהשירות
+    החיצוני נופל.</td>
+    <td>עשיתי <span class="en">mock</span> ל-<span class="en">yfinance</span>, ולכן יכולתי
+    לבדוק מקרה קצה של היסטוריה ריקה, שאי אפשר לשחזר עם נתונים אמיתיים. כשיאהו החזיר
+    תשובות בעייתיות בפרודקשן, הבדיקות נשארו ירוקות: הן בודקות את הקוד שלי, לא את הרשת.</td>
+  </tr>
+  <tr>
+    <td class="term"><span class="en">Image</span> מול <span class="en">Container</span></td>
+    <td><span class="en">Image</span> הוא תבנית בלתי משתנה, מעין מתכון, שנבנית פעם אחת.
+    <span class="en">Container</span> הוא מופע רץ של אותה תבנית. מתמונה אחת אפשר להריץ
+    קונטיינרים רבים.</td>
+    <td>יש שתי תמונות נפרדות, אחת לשרת ואחת לממשק, וגם קבצי תלויות נפרדים, כך שהממשק
+    לא נושא את ספריות הנתונים הכבדות של השרת.</td>
+  </tr>
+  <tr>
+    <td class="term"><span class="en">Cache stampede</span></td>
+    <td>כמה בקשות מגיעות בו זמנית לאותו מפתח שאינו במטמון, כולן מקבלות
+    <span class="en">miss</span>, וכולן מבצעות את העבודה היקרה במקביל. זו אינה סתם
+    "עומס על המטמון".</td>
+    <td>שני משתמשים שמבקשים את אותה מניה באותה שנייה יגרמו לשתי קריאות למודל, כלומר
+    עלות כפולה. בהיקף שלי זה זניח, והכתיבות לא מתנגשות כי הן על אותו מפתח ראשי. הפתרון
+    אם היה נדרש: נעילה לפי סימול, כך שרק הבקשה הראשונה עובדת והשנייה ממתינה לתוצאה.</td>
+  </tr>
+</table>
+
+<div class="tip">
+  <b>כלל אצבע לכל תשובה טכנית:</b> הגדרה במשפט אחד, ואז משפט אחד שמחבר לקוד שלך.
+  שני משפטים מספיקים, ומראים שאתה מבין ולא משנן.
+</div>
+
+</body>
+</html>
