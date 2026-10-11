@@ -2,6 +2,10 @@ import logging
 import yfinance as yf
 from yfinance.exceptions import YFRateLimitError
 
+class DataProviderUnavailable(Exception):
+    """The market-data provider is rate limiting us or unreachable."""
+    pass
+
 logger = logging.getLogger(__name__)
 
 SECTOR_ETF_MAP = {
