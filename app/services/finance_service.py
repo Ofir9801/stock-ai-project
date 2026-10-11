@@ -84,7 +84,7 @@ def get_stock_info(ticker: str):
     formatted_news = []
     try:
         raw_news = stock.news
-    except Exception as e:
+    except BaseException as e: # noqa: BLE001
         logger.warning("news failed for %s: %s", ticker, e)
         raw_news = None
         degraded = True
