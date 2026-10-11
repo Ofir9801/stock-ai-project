@@ -1,6 +1,9 @@
+import logging
 import yfinance as yf
+from yfinance.exceptions import YFRateLimitError
 
-# Mapping of sectors to their corresponding ETFs for broader market analysis
+logger = logging.getLogger(__name__)
+
 SECTOR_ETF_MAP = {
     "Technology": "XLK",
     "Financials": "XLF",
@@ -12,11 +15,15 @@ SECTOR_ETF_MAP = {
     "Energy": "XLE",
     "Utilities": "XLU",
     "Real Estate": "XLRE",
-    "Materials": "XLB"
+    "Materials": "XLB",
 }
 
+
+class DataProviderUnavailable(Exception):
+    """The market-data provider is rate limiting us or unreachable."""
+
+
 def _format_summary(summary: str | None) -> str:
-    """Return a real default when there is no summary, and only truncate if it's actually long."""
     if not summary:
         return "No business summary available."
     if len(summary) > 400:
@@ -24,69 +31,70 @@ def _format_summary(summary: str | None) -> str:
     return summary
 
 
+def _pct_return(prices: list) -> float:
+    if not prices or prices[0] == 0:
+        return 0.0
+    return ((prices[-1] / prices[0]) - 1) * 100
+
+
 def get_stock_info(ticker: str):
-
     stock = yf.Ticker(ticker)
+    degraded = False  # True when optional data (info / etf / news) is missing
 
-    # Descriptive fields (sector, longName, longBusinessSummary) live in stock.info,
-    # which is yfinance's slowest and most failure-prone call. Wrap it so a transient
-    # error degrades to "Unknown" fields instead of crashing the whole request.
     try:
         info = stock.info or {}
-    except Exception:
+    except Exception as e:
+        logger.warning("info failed for %s: %s", ticker, e)
         info = {}
+    if not info:
+        degraded = True
 
-    # Price comes from fast_info (fast and reliable); fall back to .info, then 0.
     try:
         fast_price = stock.fast_info.last_price
     except Exception:
         fast_price = None
 
-    # sector information
     sector = info.get("sector", "Unknown")
     industry = info.get("industry", "Unknown")
 
-    # stock history and news
-    hist = stock.history(period="1mo")
+    # history is the one mandatory call: without it there is nothing to analyze
+    try:
+        hist = stock.history(period="1mo")
+    except YFRateLimitError as e:
+        raise DataProviderUnavailable(str(e)) from e
     if hist.empty:
         raise ValueError(f"No history found for ticker {ticker}")
 
-    stock_prices = hist['Close'].tolist()
-    if not stock_prices or stock_prices[0] == 0:
-        stock_return = 0.0 
-    else:
-        stock_return = ((stock_prices[-1] / stock_prices[0]) - 1) * 100
-    # comparing to sector ETF
-    etf_ticker = SECTOR_ETF_MAP.get(sector, "SPY")
-    etf = yf.Ticker(etf_ticker)
-    etf_hist = etf.history(period="1mo")
-    etf_prices = etf_hist['Close'].tolist()
-    # same guard as the stock return: avoid empty list / division by zero
-    if not etf_prices or etf_prices[0] == 0:
-        etf_return = 0.0
-    else:
-        etf_return = ((etf_prices[-1] / etf_prices[0]) - 1) * 100
+    stock_prices = hist["Close"].tolist()
+    stock_return = _pct_return(stock_prices)
 
-    raw_news = stock.news
+    etf_ticker = SECTOR_ETF_MAP.get(sector, "SPY")
+    try:
+        etf_prices = yf.Ticker(etf_ticker).history(period="1mo")["Close"].tolist()
+        etf_return = round(_pct_return(etf_prices), 2)
+    except Exception as e:
+        logger.warning("etf history failed for %s: %s", etf_ticker, e)
+        etf_return = None  # unknown, not zero
+        degraded = True
+
     formatted_news = []
+    try:
+        raw_news = stock.news
+    except Exception as e:
+        logger.warning("news failed for %s: %s", ticker, e)
+        raw_news = None
+        degraded = True
 
     if raw_news:
         for item in raw_news[:3]:
-
-            # improved title fallback
             title = item.get("title") or item.get("headline") or "Market News"
-
-            # improved link fallback
             link = item.get("link") or item.get("url") or "#"
-
-            # fix Yahoo internal links
             if link.startswith("/"):
                 link = f"https://finance.yahoo.com{link}"
-
             formatted_news.append({
                 "title": title,
                 "publisher": item.get("publisher", "Yahoo Finance"),
-                "link": link
+                "link": link,
             })
 
     return {
@@ -97,8 +105,9 @@ def get_stock_info(ticker: str):
         "industry": industry,
         "stock_return_1mo": round(stock_return, 2),
         "etf_name": etf_ticker,
-        "etf_return_1mo": round(etf_return, 2),
+        "etf_return_1mo": etf_return,
         "history": stock_prices,
         "summary": _format_summary(info.get("longBusinessSummary")),
-        "news": formatted_news
+        "news": formatted_news,
+        "degraded": degraded,
     }
